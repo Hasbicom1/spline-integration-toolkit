@@ -48,7 +48,7 @@ const Spotlight = ({ className, fill }: { className?: string; fill?: string }) =
 }
 
 // ============================================
-// 3D CHARACTER TYPES
+// 3D CHARACTER COMPONENT
 // ============================================
 interface CharacterProps {
   position: [number, number, number]
@@ -57,17 +57,13 @@ interface CharacterProps {
   mousePosition: React.MutableRefObject<{ x: number; y: number }>
   isLookingAway: boolean
   eyeColor?: string
-  type: 'robot' | 'node'
 }
 
-// ============================================
-// ROBOT CHARACTER - Cute blob with eyes
-// ============================================
-const RobotCharacter = ({ position, color, scale = 1, mousePosition, isLookingAway, eyeColor = "#ffffff" }: Omit<CharacterProps, 'type'>) => {
+const Character = ({ position, color, scale = 1, mousePosition, isLookingAway, eyeColor = "#ffffff" }: CharacterProps) => {
   const groupRef = useRef<THREE.Group>(null)
   const bodyRef = useRef<THREE.Mesh>(null)
-  const leftPupilRef = useRef<THREE.Group>(null)
-  const rightPupilRef = useRef<THREE.Group>(null)
+  const leftEyeRef = useRef<THREE.Group>(null)
+  const rightEyeRef = useRef<THREE.Group>(null)
   
   useFrame((state) => {
     if (!groupRef.current) return
@@ -75,79 +71,86 @@ const RobotCharacter = ({ position, color, scale = 1, mousePosition, isLookingAw
     const targetX = isLookingAway ? -Math.PI * 0.3 : mousePosition.current.x * 0.3
     const targetY = isLookingAway ? Math.PI * 0.5 : mousePosition.current.y * 0.2
     
+    // Smooth rotation towards target
     groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetX, 0.05)
     groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetY, 0.05)
     
+    // Subtle floating animation
     if (bodyRef.current) {
       bodyRef.current.position.y = Math.sin(state.clock.elapsedTime * 2 + position[0]) * 0.05
     }
     
+    // Eye tracking - pupils follow mouse more directly
     const pupilOffsetX = isLookingAway ? -0.03 : mousePosition.current.x * 0.03
     const pupilOffsetY = isLookingAway ? 0.02 : -mousePosition.current.y * 0.02
     
-    if (leftPupilRef.current) {
-      leftPupilRef.current.position.x = THREE.MathUtils.lerp(leftPupilRef.current.position.x, pupilOffsetX, 0.1)
-      leftPupilRef.current.position.y = THREE.MathUtils.lerp(leftPupilRef.current.position.y, pupilOffsetY, 0.1)
+    if (leftEyeRef.current) {
+      leftEyeRef.current.position.x = THREE.MathUtils.lerp(leftEyeRef.current.position.x, pupilOffsetX, 0.1)
+      leftEyeRef.current.position.y = THREE.MathUtils.lerp(leftEyeRef.current.position.y, pupilOffsetY, 0.1)
     }
-    if (rightPupilRef.current) {
-      rightPupilRef.current.position.x = THREE.MathUtils.lerp(rightPupilRef.current.position.x, pupilOffsetX, 0.1)
-      rightPupilRef.current.position.y = THREE.MathUtils.lerp(rightPupilRef.current.position.y, pupilOffsetY, 0.1)
+    if (rightEyeRef.current) {
+      rightEyeRef.current.position.x = THREE.MathUtils.lerp(rightEyeRef.current.position.x, pupilOffsetX, 0.1)
+      rightEyeRef.current.position.y = THREE.MathUtils.lerp(rightEyeRef.current.position.y, pupilOffsetY, 0.1)
     }
   })
 
   return (
     <group ref={groupRef} position={position} scale={scale}>
-      {/* Main body */}
+      {/* Main robot body - rounded blob shape */}
       <mesh ref={bodyRef}>
         <sphereGeometry args={[0.5, 32, 32]} />
         <meshStandardMaterial color={color} roughness={0.2} metalness={0.3} />
       </mesh>
       
-      {/* Body glow */}
+      {/* Body glow/rim */}
       <mesh scale={1.02}>
         <sphereGeometry args={[0.5, 32, 32]} />
         <meshStandardMaterial color={color} roughness={0.1} metalness={0.5} transparent opacity={0.3} />
       </mesh>
       
-      {/* Face visor */}
+      {/* Face visor/screen area - darker inset */}
       <mesh position={[0, 0.05, 0.4]}>
         <sphereGeometry args={[0.32, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2]} />
         <meshStandardMaterial color="#1a1a2e" roughness={0.1} metalness={0.8} />
       </mesh>
       
-      {/* Left Eye */}
+      {/* Left Eye socket */}
       <mesh position={[-0.12, 0.12, 0.42]}>
         <sphereGeometry args={[0.1, 16, 16]} />
         <meshStandardMaterial color={eyeColor} roughness={0.1} emissive={eyeColor} emissiveIntensity={0.3} />
       </mesh>
-      <group position={[-0.12, 0.12, 0.48]} ref={leftPupilRef}>
+      {/* Left Pupil */}
+      <group position={[-0.12, 0.12, 0.48]} ref={leftEyeRef}>
         <mesh>
           <sphereGeometry args={[0.05, 16, 16]} />
           <meshStandardMaterial color="#111111" roughness={0.1} />
         </mesh>
+        {/* Eye highlight */}
         <mesh position={[0.015, 0.015, 0.02]}>
           <sphereGeometry args={[0.015, 8, 8]} />
           <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={1} />
         </mesh>
       </group>
       
-      {/* Right Eye */}
+      {/* Right Eye socket */}
       <mesh position={[0.12, 0.12, 0.42]}>
         <sphereGeometry args={[0.1, 16, 16]} />
         <meshStandardMaterial color={eyeColor} roughness={0.1} emissive={eyeColor} emissiveIntensity={0.3} />
       </mesh>
-      <group position={[0.12, 0.12, 0.48]} ref={rightPupilRef}>
+      {/* Right Pupil */}
+      <group position={[0.12, 0.12, 0.48]} ref={rightEyeRef}>
         <mesh>
           <sphereGeometry args={[0.05, 16, 16]} />
           <meshStandardMaterial color="#111111" roughness={0.1} />
         </mesh>
+        {/* Eye highlight */}
         <mesh position={[0.015, 0.015, 0.02]}>
           <sphereGeometry args={[0.015, 8, 8]} />
           <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={1} />
         </mesh>
       </group>
       
-      {/* Antenna */}
+      {/* Small antenna/top detail */}
       <mesh position={[0, 0.5, 0]}>
         <sphereGeometry args={[0.06, 16, 16]} />
         <meshStandardMaterial color={color} roughness={0.2} metalness={0.5} emissive={color} emissiveIntensity={0.2} />
@@ -161,93 +164,7 @@ const RobotCharacter = ({ position, color, scale = 1, mousePosition, isLookingAw
 }
 
 // ============================================
-// NODE CHARACTER - AI workflow orb with rings
-// ============================================
-const NodeCharacter = ({ position, color, scale = 1, mousePosition, isLookingAway, eyeColor = "#ffffff" }: Omit<CharacterProps, 'type'>) => {
-  const groupRef = useRef<THREE.Group>(null)
-  const bodyRef = useRef<THREE.Mesh>(null)
-  const ringRef = useRef<THREE.Mesh>(null)
-  const coreRef = useRef<THREE.Mesh>(null)
-  
-  useFrame((state) => {
-    if (!groupRef.current) return
-    
-    const targetX = isLookingAway ? -Math.PI * 0.4 : mousePosition.current.x * 0.4
-    const targetY = isLookingAway ? Math.PI * 0.3 : mousePosition.current.y * 0.25
-    
-    groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetX, 0.05)
-    groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetY, 0.05)
-    
-    if (bodyRef.current) {
-      bodyRef.current.position.y = Math.sin(state.clock.elapsedTime * 1.5 + position[0]) * 0.08
-    }
-    
-    if (ringRef.current) {
-      ringRef.current.rotation.z = state.clock.elapsedTime * 0.5 + position[0]
-      ringRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.3) * 0.2
-    }
-    
-    if (coreRef.current) {
-      const pulse = Math.sin(state.clock.elapsedTime * 2 + position[0]) * 0.1 + 0.9
-      coreRef.current.scale.setScalar(pulse)
-    }
-  })
-
-  return (
-    <group ref={groupRef} position={position} scale={scale}>
-      {/* Main orb body */}
-      <mesh ref={bodyRef}>
-        <sphereGeometry args={[0.4, 32, 32]} />
-        <meshStandardMaterial color={color} roughness={0.1} metalness={0.8} transparent opacity={0.6} />
-      </mesh>
-      
-      {/* Inner core */}
-      <mesh ref={coreRef}>
-        <sphereGeometry args={[0.2, 32, 32]} />
-        <meshStandardMaterial color={eyeColor} emissive={color} emissiveIntensity={1.5} roughness={0} metalness={0.2} />
-      </mesh>
-      
-      {/* Orbital ring */}
-      <mesh ref={ringRef} rotation={[Math.PI / 3, 0, 0]}>
-        <torusGeometry args={[0.55, 0.03, 16, 64]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} roughness={0.2} metalness={0.9} />
-      </mesh>
-      
-      {/* Second ring */}
-      <mesh rotation={[Math.PI / 2, Math.PI / 4, 0]}>
-        <torusGeometry args={[0.5, 0.02, 16, 64]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.3} transparent opacity={0.6} roughness={0.2} />
-      </mesh>
-      
-      {/* Connection nodes */}
-      {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((angle, i) => (
-        <mesh key={i} position={[Math.cos(angle) * 0.55, Math.sin(angle) * 0.55 * Math.cos(Math.PI / 3), Math.sin(angle) * 0.55 * Math.sin(Math.PI / 3)]}>
-          <sphereGeometry args={[0.06, 16, 16]} />
-          <meshStandardMaterial color={eyeColor} emissive={eyeColor} emissiveIntensity={1} />
-        </mesh>
-      ))}
-      
-      {/* Outer glow */}
-      <mesh scale={1.1}>
-        <sphereGeometry args={[0.4, 32, 32]} />
-        <meshStandardMaterial color={color} transparent opacity={0.15} roughness={0} />
-      </mesh>
-    </group>
-  )
-}
-
-// ============================================
-// CHARACTER WRAPPER - Renders robot or node
-// ============================================
-const Character = (props: CharacterProps) => {
-  if (props.type === 'robot') {
-    return <RobotCharacter {...props} />
-  }
-  return <NodeCharacter {...props} />
-}
-
-// ============================================
-// 3D SCENE WITH MIXED CHARACTERS
+// 3D SCENE WITH MULTIPLE CHARACTERS
 // ============================================
 interface SceneProps {
   isLookingAway: boolean
@@ -257,34 +174,35 @@ const Scene = ({ isLookingAway }: SceneProps) => {
   const mousePosition = useRef({ x: 0, y: 0 })
   const { viewport } = useThree()
 
+  // Track mouse position
   useFrame((state) => {
     mousePosition.current.x = (state.pointer.x * viewport.width) / 2
     mousePosition.current.y = (state.pointer.y * viewport.height) / 2
   })
 
-  // Mixed character configurations - robots AND nodes
+  // Character configurations - multiple characters with different colors and positions
   const characters = useMemo(() => [
-    // Front row - mix of both types
-    { position: [-1.5, 0, 1] as [number, number, number], color: "#6366f1", scale: 1.2, eyeColor: "#e0e7ff", type: 'robot' as const },
-    { position: [0, -0.3, 1.5] as [number, number, number], color: "#8b5cf6", scale: 1.4, eyeColor: "#f3e8ff", type: 'node' as const },
-    { position: [1.5, 0.2, 1] as [number, number, number], color: "#ec4899", scale: 1.1, eyeColor: "#fce7f3", type: 'robot' as const },
+    // Front row - main characters
+    { position: [-1.5, 0, 1] as [number, number, number], color: "#6366f1", scale: 1.2, eyeColor: "#e0e7ff" },
+    { position: [0, -0.3, 1.5] as [number, number, number], color: "#8b5cf6", scale: 1.4, eyeColor: "#f3e8ff" },
+    { position: [1.5, 0.2, 1] as [number, number, number], color: "#ec4899", scale: 1.1, eyeColor: "#fce7f3" },
     
-    // Middle row - alternating
-    { position: [-2.5, 0.5, -0.5] as [number, number, number], color: "#14b8a6", scale: 0.9, eyeColor: "#ccfbf1", type: 'node' as const },
-    { position: [-0.8, 0.8, -0.3] as [number, number, number], color: "#f59e0b", scale: 0.85, eyeColor: "#fef3c7", type: 'robot' as const },
-    { position: [0.9, 0.6, -0.2] as [number, number, number], color: "#22c55e", scale: 0.9, eyeColor: "#dcfce7", type: 'node' as const },
-    { position: [2.5, 0.3, -0.5] as [number, number, number], color: "#3b82f6", scale: 0.95, eyeColor: "#dbeafe", type: 'robot' as const },
+    // Middle row
+    { position: [-2.5, 0.5, -0.5] as [number, number, number], color: "#14b8a6", scale: 0.9, eyeColor: "#ccfbf1" },
+    { position: [-0.8, 0.8, -0.3] as [number, number, number], color: "#f59e0b", scale: 0.85, eyeColor: "#fef3c7" },
+    { position: [0.9, 0.6, -0.2] as [number, number, number], color: "#22c55e", scale: 0.9, eyeColor: "#dcfce7" },
+    { position: [2.5, 0.3, -0.5] as [number, number, number], color: "#3b82f6", scale: 0.95, eyeColor: "#dbeafe" },
     
-    // Back row - mixed
-    { position: [-3, 1.2, -2] as [number, number, number], color: "#f43f5e", scale: 0.7, eyeColor: "#ffe4e6", type: 'node' as const },
-    { position: [-1.5, 1.5, -2.2] as [number, number, number], color: "#a855f7", scale: 0.65, eyeColor: "#f3e8ff", type: 'robot' as const },
-    { position: [0, 1.3, -2] as [number, number, number], color: "#06b6d4", scale: 0.7, eyeColor: "#cffafe", type: 'node' as const },
-    { position: [1.5, 1.4, -2.2] as [number, number, number], color: "#eab308", scale: 0.65, eyeColor: "#fef9c3", type: 'robot' as const },
-    { position: [3, 1.1, -2] as [number, number, number], color: "#10b981", scale: 0.7, eyeColor: "#d1fae5", type: 'node' as const },
+    // Back row - smaller characters
+    { position: [-3, 1.2, -2] as [number, number, number], color: "#f43f5e", scale: 0.7, eyeColor: "#ffe4e6" },
+    { position: [-1.5, 1.5, -2.2] as [number, number, number], color: "#a855f7", scale: 0.65, eyeColor: "#f3e8ff" },
+    { position: [0, 1.3, -2] as [number, number, number], color: "#06b6d4", scale: 0.7, eyeColor: "#cffafe" },
+    { position: [1.5, 1.4, -2.2] as [number, number, number], color: "#eab308", scale: 0.65, eyeColor: "#fef9c3" },
+    { position: [3, 1.1, -2] as [number, number, number], color: "#10b981", scale: 0.7, eyeColor: "#d1fae5" },
     
-    // Bottom - mixed
-    { position: [-2, -0.8, 0.5] as [number, number, number], color: "#f97316", scale: 0.8, eyeColor: "#ffedd5", type: 'robot' as const },
-    { position: [2, -0.7, 0.3] as [number, number, number], color: "#84cc16", scale: 0.75, eyeColor: "#ecfccb", type: 'node' as const },
+    // Bottom characters
+    { position: [-2, -0.8, 0.5] as [number, number, number], color: "#f97316", scale: 0.8, eyeColor: "#ffedd5" },
+    { position: [2, -0.7, 0.3] as [number, number, number], color: "#84cc16", scale: 0.75, eyeColor: "#ecfccb" },
   ], [])
 
   return (
@@ -303,7 +221,6 @@ const Scene = ({ isLookingAway }: SceneProps) => {
           color={char.color}
           scale={char.scale}
           eyeColor={char.eyeColor}
-          type={char.type}
           mousePosition={mousePosition}
           isLookingAway={isLookingAway}
         />
@@ -401,6 +318,17 @@ const Auth = () => {
           </Canvas>
         </div>
         
+        {/* Privacy indicator when password focused */}
+        {isPasswordFocused && (
+          <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+            <div className="bg-black/60 backdrop-blur-sm rounded-2xl px-8 py-4 border border-white/10">
+              <div className="flex items-center gap-3 text-neutral-300">
+                <EyeOff className="h-6 w-6" />
+                <span className="text-lg font-medium">Characters looking away...</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Right side - Auth Form */}
