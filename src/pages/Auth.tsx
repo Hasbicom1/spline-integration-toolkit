@@ -62,6 +62,8 @@ interface CharacterProps {
 const Character = ({ position, color, scale = 1, mousePosition, isLookingAway, eyeColor = "#ffffff" }: CharacterProps) => {
   const groupRef = useRef<THREE.Group>(null)
   const bodyRef = useRef<THREE.Mesh>(null)
+  const leftEyeRef = useRef<THREE.Group>(null)
+  const rightEyeRef = useRef<THREE.Group>(null)
   
   useFrame((state) => {
     if (!groupRef.current) return
@@ -77,34 +79,85 @@ const Character = ({ position, color, scale = 1, mousePosition, isLookingAway, e
     if (bodyRef.current) {
       bodyRef.current.position.y = Math.sin(state.clock.elapsedTime * 2 + position[0]) * 0.05
     }
+    
+    // Eye tracking - pupils follow mouse more directly
+    const pupilOffsetX = isLookingAway ? -0.03 : mousePosition.current.x * 0.03
+    const pupilOffsetY = isLookingAway ? 0.02 : -mousePosition.current.y * 0.02
+    
+    if (leftEyeRef.current) {
+      leftEyeRef.current.position.x = THREE.MathUtils.lerp(leftEyeRef.current.position.x, pupilOffsetX, 0.1)
+      leftEyeRef.current.position.y = THREE.MathUtils.lerp(leftEyeRef.current.position.y, pupilOffsetY, 0.1)
+    }
+    if (rightEyeRef.current) {
+      rightEyeRef.current.position.x = THREE.MathUtils.lerp(rightEyeRef.current.position.x, pupilOffsetX, 0.1)
+      rightEyeRef.current.position.y = THREE.MathUtils.lerp(rightEyeRef.current.position.y, pupilOffsetY, 0.1)
+    }
   })
 
   return (
     <group ref={groupRef} position={position} scale={scale}>
-      {/* Body */}
+      {/* Main robot body - rounded blob shape */}
       <mesh ref={bodyRef}>
-        <capsuleGeometry args={[0.4, 0.5, 8, 16]} />
-        <meshStandardMaterial color={color} roughness={0.3} metalness={0.1} />
+        <sphereGeometry args={[0.5, 32, 32]} />
+        <meshStandardMaterial color={color} roughness={0.2} metalness={0.3} />
       </mesh>
       
-      {/* Left Eye */}
-      <mesh position={[-0.15, 0.15, 0.35]}>
-        <sphereGeometry args={[0.12, 16, 16]} />
-        <meshStandardMaterial color={eyeColor} roughness={0.1} />
-      </mesh>
-      <mesh position={[-0.15, 0.15, 0.42]}>
-        <sphereGeometry args={[0.06, 16, 16]} />
-        <meshStandardMaterial color="#111111" roughness={0.1} />
+      {/* Body glow/rim */}
+      <mesh scale={1.02}>
+        <sphereGeometry args={[0.5, 32, 32]} />
+        <meshStandardMaterial color={color} roughness={0.1} metalness={0.5} transparent opacity={0.3} />
       </mesh>
       
-      {/* Right Eye */}
-      <mesh position={[0.15, 0.15, 0.35]}>
-        <sphereGeometry args={[0.12, 16, 16]} />
-        <meshStandardMaterial color={eyeColor} roughness={0.1} />
+      {/* Face visor/screen area - darker inset */}
+      <mesh position={[0, 0.05, 0.4]}>
+        <sphereGeometry args={[0.32, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color="#1a1a2e" roughness={0.1} metalness={0.8} />
       </mesh>
-      <mesh position={[0.15, 0.15, 0.42]}>
+      
+      {/* Left Eye socket */}
+      <mesh position={[-0.12, 0.12, 0.42]}>
+        <sphereGeometry args={[0.1, 16, 16]} />
+        <meshStandardMaterial color={eyeColor} roughness={0.1} emissive={eyeColor} emissiveIntensity={0.3} />
+      </mesh>
+      {/* Left Pupil */}
+      <group position={[-0.12, 0.12, 0.48]} ref={leftEyeRef}>
+        <mesh>
+          <sphereGeometry args={[0.05, 16, 16]} />
+          <meshStandardMaterial color="#111111" roughness={0.1} />
+        </mesh>
+        {/* Eye highlight */}
+        <mesh position={[0.015, 0.015, 0.02]}>
+          <sphereGeometry args={[0.015, 8, 8]} />
+          <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={1} />
+        </mesh>
+      </group>
+      
+      {/* Right Eye socket */}
+      <mesh position={[0.12, 0.12, 0.42]}>
+        <sphereGeometry args={[0.1, 16, 16]} />
+        <meshStandardMaterial color={eyeColor} roughness={0.1} emissive={eyeColor} emissiveIntensity={0.3} />
+      </mesh>
+      {/* Right Pupil */}
+      <group position={[0.12, 0.12, 0.48]} ref={rightEyeRef}>
+        <mesh>
+          <sphereGeometry args={[0.05, 16, 16]} />
+          <meshStandardMaterial color="#111111" roughness={0.1} />
+        </mesh>
+        {/* Eye highlight */}
+        <mesh position={[0.015, 0.015, 0.02]}>
+          <sphereGeometry args={[0.015, 8, 8]} />
+          <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={1} />
+        </mesh>
+      </group>
+      
+      {/* Small antenna/top detail */}
+      <mesh position={[0, 0.5, 0]}>
         <sphereGeometry args={[0.06, 16, 16]} />
-        <meshStandardMaterial color="#111111" roughness={0.1} />
+        <meshStandardMaterial color={color} roughness={0.2} metalness={0.5} emissive={color} emissiveIntensity={0.2} />
+      </mesh>
+      <mesh position={[0, 0.42, 0]}>
+        <cylinderGeometry args={[0.02, 0.02, 0.1, 8]} />
+        <meshStandardMaterial color="#333333" roughness={0.3} metalness={0.7} />
       </mesh>
     </group>
   )
