@@ -62,102 +62,116 @@ interface CharacterProps {
 const Character = ({ position, color, scale = 1, mousePosition, isLookingAway, eyeColor = "#ffffff" }: CharacterProps) => {
   const groupRef = useRef<THREE.Group>(null)
   const bodyRef = useRef<THREE.Mesh>(null)
-  const leftEyeRef = useRef<THREE.Group>(null)
-  const rightEyeRef = useRef<THREE.Group>(null)
+  const ringRef = useRef<THREE.Mesh>(null)
+  const coreRef = useRef<THREE.Mesh>(null)
   
   useFrame((state) => {
     if (!groupRef.current) return
     
-    const targetX = isLookingAway ? -Math.PI * 0.3 : mousePosition.current.x * 0.3
-    const targetY = isLookingAway ? Math.PI * 0.5 : mousePosition.current.y * 0.2
+    const targetX = isLookingAway ? -Math.PI * 0.4 : mousePosition.current.x * 0.4
+    const targetY = isLookingAway ? Math.PI * 0.3 : mousePosition.current.y * 0.25
     
     // Smooth rotation towards target
     groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetX, 0.05)
     groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetY, 0.05)
     
-    // Subtle floating animation
+    // Floating animation
     if (bodyRef.current) {
-      bodyRef.current.position.y = Math.sin(state.clock.elapsedTime * 2 + position[0]) * 0.05
+      bodyRef.current.position.y = Math.sin(state.clock.elapsedTime * 1.5 + position[0]) * 0.08
     }
     
-    // Eye tracking - pupils follow mouse more directly
-    const pupilOffsetX = isLookingAway ? -0.03 : mousePosition.current.x * 0.03
-    const pupilOffsetY = isLookingAway ? 0.02 : -mousePosition.current.y * 0.02
-    
-    if (leftEyeRef.current) {
-      leftEyeRef.current.position.x = THREE.MathUtils.lerp(leftEyeRef.current.position.x, pupilOffsetX, 0.1)
-      leftEyeRef.current.position.y = THREE.MathUtils.lerp(leftEyeRef.current.position.y, pupilOffsetY, 0.1)
+    // Rotating ring animation
+    if (ringRef.current) {
+      ringRef.current.rotation.z = state.clock.elapsedTime * 0.5 + position[0]
+      ringRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.3) * 0.2
     }
-    if (rightEyeRef.current) {
-      rightEyeRef.current.position.x = THREE.MathUtils.lerp(rightEyeRef.current.position.x, pupilOffsetX, 0.1)
-      rightEyeRef.current.position.y = THREE.MathUtils.lerp(rightEyeRef.current.position.y, pupilOffsetY, 0.1)
+    
+    // Pulsing core glow
+    if (coreRef.current) {
+      const pulse = Math.sin(state.clock.elapsedTime * 2 + position[0]) * 0.1 + 0.9
+      coreRef.current.scale.setScalar(pulse)
     }
   })
 
   return (
     <group ref={groupRef} position={position} scale={scale}>
-      {/* Main robot body - rounded blob shape */}
+      {/* Main AI node body - glowing orb */}
       <mesh ref={bodyRef}>
-        <sphereGeometry args={[0.5, 32, 32]} />
-        <meshStandardMaterial color={color} roughness={0.2} metalness={0.3} />
+        <sphereGeometry args={[0.4, 32, 32]} />
+        <meshStandardMaterial 
+          color={color} 
+          roughness={0.1} 
+          metalness={0.8} 
+          transparent 
+          opacity={0.6}
+        />
       </mesh>
       
-      {/* Body glow/rim */}
-      <mesh scale={1.02}>
-        <sphereGeometry args={[0.5, 32, 32]} />
-        <meshStandardMaterial color={color} roughness={0.1} metalness={0.5} transparent opacity={0.3} />
+      {/* Inner core - bright center */}
+      <mesh ref={coreRef}>
+        <sphereGeometry args={[0.2, 32, 32]} />
+        <meshStandardMaterial 
+          color={eyeColor} 
+          emissive={color} 
+          emissiveIntensity={1.5} 
+          roughness={0} 
+          metalness={0.2}
+        />
       </mesh>
       
-      {/* Face visor/screen area - darker inset */}
-      <mesh position={[0, 0.05, 0.4]}>
-        <sphereGeometry args={[0.32, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#1a1a2e" roughness={0.1} metalness={0.8} />
+      {/* Orbital ring - workflow/connection symbol */}
+      <mesh ref={ringRef} rotation={[Math.PI / 3, 0, 0]}>
+        <torusGeometry args={[0.55, 0.03, 16, 64]} />
+        <meshStandardMaterial 
+          color={color} 
+          emissive={color} 
+          emissiveIntensity={0.5} 
+          roughness={0.2} 
+          metalness={0.9}
+        />
       </mesh>
       
-      {/* Left Eye socket */}
-      <mesh position={[-0.12, 0.12, 0.42]}>
-        <sphereGeometry args={[0.1, 16, 16]} />
-        <meshStandardMaterial color={eyeColor} roughness={0.1} emissive={eyeColor} emissiveIntensity={0.3} />
+      {/* Second orbital ring - crossed */}
+      <mesh rotation={[Math.PI / 2, Math.PI / 4, 0]}>
+        <torusGeometry args={[0.5, 0.02, 16, 64]} />
+        <meshStandardMaterial 
+          color={color} 
+          emissive={color} 
+          emissiveIntensity={0.3} 
+          transparent 
+          opacity={0.6}
+          roughness={0.2}
+        />
       </mesh>
-      {/* Left Pupil */}
-      <group position={[-0.12, 0.12, 0.48]} ref={leftEyeRef}>
-        <mesh>
-          <sphereGeometry args={[0.05, 16, 16]} />
-          <meshStandardMaterial color="#111111" roughness={0.1} />
+      
+      {/* Connection nodes - small spheres at cardinal points */}
+      {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((angle, i) => (
+        <mesh 
+          key={i} 
+          position={[
+            Math.cos(angle) * 0.55,
+            Math.sin(angle) * 0.55 * Math.cos(Math.PI / 3),
+            Math.sin(angle) * 0.55 * Math.sin(Math.PI / 3)
+          ]}
+        >
+          <sphereGeometry args={[0.06, 16, 16]} />
+          <meshStandardMaterial 
+            color={eyeColor} 
+            emissive={eyeColor} 
+            emissiveIntensity={1}
+          />
         </mesh>
-        {/* Eye highlight */}
-        <mesh position={[0.015, 0.015, 0.02]}>
-          <sphereGeometry args={[0.015, 8, 8]} />
-          <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={1} />
-        </mesh>
-      </group>
+      ))}
       
-      {/* Right Eye socket */}
-      <mesh position={[0.12, 0.12, 0.42]}>
-        <sphereGeometry args={[0.1, 16, 16]} />
-        <meshStandardMaterial color={eyeColor} roughness={0.1} emissive={eyeColor} emissiveIntensity={0.3} />
-      </mesh>
-      {/* Right Pupil */}
-      <group position={[0.12, 0.12, 0.48]} ref={rightEyeRef}>
-        <mesh>
-          <sphereGeometry args={[0.05, 16, 16]} />
-          <meshStandardMaterial color="#111111" roughness={0.1} />
-        </mesh>
-        {/* Eye highlight */}
-        <mesh position={[0.015, 0.015, 0.02]}>
-          <sphereGeometry args={[0.015, 8, 8]} />
-          <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={1} />
-        </mesh>
-      </group>
-      
-      {/* Small antenna/top detail */}
-      <mesh position={[0, 0.5, 0]}>
-        <sphereGeometry args={[0.06, 16, 16]} />
-        <meshStandardMaterial color={color} roughness={0.2} metalness={0.5} emissive={color} emissiveIntensity={0.2} />
-      </mesh>
-      <mesh position={[0, 0.42, 0]}>
-        <cylinderGeometry args={[0.02, 0.02, 0.1, 8]} />
-        <meshStandardMaterial color="#333333" roughness={0.3} metalness={0.7} />
+      {/* Outer glow shell */}
+      <mesh scale={1.1}>
+        <sphereGeometry args={[0.4, 32, 32]} />
+        <meshStandardMaterial 
+          color={color} 
+          transparent 
+          opacity={0.15} 
+          roughness={0}
+        />
       </mesh>
     </group>
   )
@@ -318,17 +332,6 @@ const Auth = () => {
           </Canvas>
         </div>
         
-        {/* Privacy indicator when password focused */}
-        {isPasswordFocused && (
-          <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-            <div className="bg-black/60 backdrop-blur-sm rounded-2xl px-8 py-4 border border-white/10">
-              <div className="flex items-center gap-3 text-neutral-300">
-                <EyeOff className="h-6 w-6" />
-                <span className="text-lg font-medium">Characters looking away...</span>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Right side - Auth Form */}
