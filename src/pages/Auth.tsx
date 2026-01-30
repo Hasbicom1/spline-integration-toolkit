@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useRef, useCallback, Suspense, lazy } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from "lucide-react"
-
-// Lazy load Spline for performance
-const Spline = lazy(() => import('@splinetool/react-spline'))
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Environment } from '@react-three/drei'
+import * as THREE from 'three'
 
 // ============================================
-// SPOTLIGHT COMPONENT (inline for single file)
+// SPOTLIGHT COMPONENT
 // ============================================
 const Spotlight = ({ className, fill }: { className?: string; fill?: string }) => {
   return (
@@ -48,37 +48,136 @@ const Spotlight = ({ className, fill }: { className?: string; fill?: string }) =
 }
 
 // ============================================
-// SPLINE SCENE COMPONENT WITH INTERACTIVITY
+// 3D CHARACTER COMPONENT
 // ============================================
-interface SplineSceneProps {
-  scene: string
-  className?: string
-  onSplineLoad?: (spline: any) => void
+interface CharacterProps {
+  position: [number, number, number]
+  color: string
+  scale?: number
+  mousePosition: React.MutableRefObject<{ x: number; y: number }>
+  isLookingAway: boolean
+  eyeColor?: string
 }
 
-const SplineScene = ({ scene, className, onSplineLoad }: SplineSceneProps) => {
+const Character = ({ position, color, scale = 1, mousePosition, isLookingAway, eyeColor = "#ffffff" }: CharacterProps) => {
+  const groupRef = useRef<THREE.Group>(null)
+  const bodyRef = useRef<THREE.Mesh>(null)
+  
+  useFrame((state) => {
+    if (!groupRef.current) return
+    
+    const targetX = isLookingAway ? -Math.PI * 0.3 : mousePosition.current.x * 0.3
+    const targetY = isLookingAway ? Math.PI * 0.5 : mousePosition.current.y * 0.2
+    
+    // Smooth rotation towards target
+    groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetX, 0.05)
+    groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetY, 0.05)
+    
+    // Subtle floating animation
+    if (bodyRef.current) {
+      bodyRef.current.position.y = Math.sin(state.clock.elapsedTime * 2 + position[0]) * 0.05
+    }
+  })
+
   return (
-    <Suspense 
-      fallback={
-        <div className="w-full h-full flex items-center justify-center bg-black">
-          <div className="flex flex-col items-center gap-4">
-            <span className="loader" />
-            <span className="text-neutral-400 text-sm">Loading characters...</span>
-          </div>
-        </div>
-      }
-    >
-      <Spline
-        scene={scene}
-        className={className}
-        onLoad={onSplineLoad}
-      />
-    </Suspense>
+    <group ref={groupRef} position={position} scale={scale}>
+      {/* Body */}
+      <mesh ref={bodyRef}>
+        <capsuleGeometry args={[0.4, 0.5, 8, 16]} />
+        <meshStandardMaterial color={color} roughness={0.3} metalness={0.1} />
+      </mesh>
+      
+      {/* Left Eye */}
+      <mesh position={[-0.15, 0.15, 0.35]}>
+        <sphereGeometry args={[0.12, 16, 16]} />
+        <meshStandardMaterial color={eyeColor} roughness={0.1} />
+      </mesh>
+      <mesh position={[-0.15, 0.15, 0.42]}>
+        <sphereGeometry args={[0.06, 16, 16]} />
+        <meshStandardMaterial color="#111111" roughness={0.1} />
+      </mesh>
+      
+      {/* Right Eye */}
+      <mesh position={[0.15, 0.15, 0.35]}>
+        <sphereGeometry args={[0.12, 16, 16]} />
+        <meshStandardMaterial color={eyeColor} roughness={0.1} />
+      </mesh>
+      <mesh position={[0.15, 0.15, 0.42]}>
+        <sphereGeometry args={[0.06, 16, 16]} />
+        <meshStandardMaterial color="#111111" roughness={0.1} />
+      </mesh>
+    </group>
   )
 }
 
 // ============================================
-// INPUT COMPONENT (inline for single file)
+// 3D SCENE WITH MULTIPLE CHARACTERS
+// ============================================
+interface SceneProps {
+  isLookingAway: boolean
+}
+
+const Scene = ({ isLookingAway }: SceneProps) => {
+  const mousePosition = useRef({ x: 0, y: 0 })
+  const { viewport } = useThree()
+
+  // Track mouse position
+  useFrame((state) => {
+    mousePosition.current.x = (state.pointer.x * viewport.width) / 2
+    mousePosition.current.y = (state.pointer.y * viewport.height) / 2
+  })
+
+  // Character configurations - multiple characters with different colors and positions
+  const characters = useMemo(() => [
+    // Front row - main characters
+    { position: [-1.5, 0, 1] as [number, number, number], color: "#6366f1", scale: 1.2, eyeColor: "#e0e7ff" },
+    { position: [0, -0.3, 1.5] as [number, number, number], color: "#8b5cf6", scale: 1.4, eyeColor: "#f3e8ff" },
+    { position: [1.5, 0.2, 1] as [number, number, number], color: "#ec4899", scale: 1.1, eyeColor: "#fce7f3" },
+    
+    // Middle row
+    { position: [-2.5, 0.5, -0.5] as [number, number, number], color: "#14b8a6", scale: 0.9, eyeColor: "#ccfbf1" },
+    { position: [-0.8, 0.8, -0.3] as [number, number, number], color: "#f59e0b", scale: 0.85, eyeColor: "#fef3c7" },
+    { position: [0.9, 0.6, -0.2] as [number, number, number], color: "#22c55e", scale: 0.9, eyeColor: "#dcfce7" },
+    { position: [2.5, 0.3, -0.5] as [number, number, number], color: "#3b82f6", scale: 0.95, eyeColor: "#dbeafe" },
+    
+    // Back row - smaller characters
+    { position: [-3, 1.2, -2] as [number, number, number], color: "#f43f5e", scale: 0.7, eyeColor: "#ffe4e6" },
+    { position: [-1.5, 1.5, -2.2] as [number, number, number], color: "#a855f7", scale: 0.65, eyeColor: "#f3e8ff" },
+    { position: [0, 1.3, -2] as [number, number, number], color: "#06b6d4", scale: 0.7, eyeColor: "#cffafe" },
+    { position: [1.5, 1.4, -2.2] as [number, number, number], color: "#eab308", scale: 0.65, eyeColor: "#fef9c3" },
+    { position: [3, 1.1, -2] as [number, number, number], color: "#10b981", scale: 0.7, eyeColor: "#d1fae5" },
+    
+    // Bottom characters
+    { position: [-2, -0.8, 0.5] as [number, number, number], color: "#f97316", scale: 0.8, eyeColor: "#ffedd5" },
+    { position: [2, -0.7, 0.3] as [number, number, number], color: "#84cc16", scale: 0.75, eyeColor: "#ecfccb" },
+  ], [])
+
+  return (
+    <>
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
+      <directionalLight position={[-5, 3, -5]} intensity={0.5} color="#8b5cf6" />
+      <pointLight position={[0, -2, 3]} intensity={0.5} color="#ec4899" />
+      
+      <Environment preset="night" />
+      
+      {characters.map((char, index) => (
+        <Character
+          key={index}
+          position={char.position}
+          color={char.color}
+          scale={char.scale}
+          eyeColor={char.eyeColor}
+          mousePosition={mousePosition}
+          isLookingAway={isLookingAway}
+        />
+      ))}
+    </>
+  )
+}
+
+// ============================================
+// INPUT COMPONENT
 // ============================================
 const Input = ({ className, type, ...props }: React.InputHTMLAttributes<HTMLInputElement>) => {
   return (
@@ -91,7 +190,7 @@ const Input = ({ className, type, ...props }: React.InputHTMLAttributes<HTMLInpu
 }
 
 // ============================================
-// BUTTON COMPONENT (inline for single file)
+// BUTTON COMPONENT
 // ============================================
 const Button = ({ 
   className, 
@@ -113,7 +212,7 @@ const Button = ({
 }
 
 // ============================================
-// LABEL COMPONENT (inline for single file)
+// LABEL COMPONENT
 // ============================================
 const Label = ({ className, children, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) => {
   return (
@@ -133,37 +232,13 @@ const Auth = () => {
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [isPasswordFocused, setIsPasswordFocused] = useState(false)
-  
-  // Spline application reference
-  const splineRef = useRef<any>(null)
 
-  const handleSplineLoad = useCallback((splineApp: any) => {
-    splineRef.current = splineApp
-  }, [])
-
-  // Trigger look away animation when password is focused
   const handlePasswordFocus = useCallback(() => {
     setIsPasswordFocused(true)
-    if (splineRef.current) {
-      try {
-        // Emit mouseDown event to trigger look away in Spline
-        splineRef.current.emitEvent('mouseDown', 'look-away')
-      } catch (e) {
-        // Fallback if event doesn't exist
-      }
-    }
   }, [])
 
   const handlePasswordBlur = useCallback(() => {
     setIsPasswordFocused(false)
-    if (splineRef.current) {
-      try {
-        // Emit mouseUp event to restore normal state
-        splineRef.current.emitEvent('mouseUp', 'look-away')
-      } catch (e) {
-        // Fallback if event doesn't exist
-      }
-    }
   }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -183,13 +258,11 @@ const Auth = () => {
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/70 z-10 pointer-events-none" />
         
-        {/* Interactive 3D Characters Scene - follows mouse, looks away on password */}
-        <div className={`w-full h-full transition-all duration-500 ${isPasswordFocused ? 'scale-105 blur-sm' : ''}`}>
-          <SplineScene
-            scene="https://prod.spline.design/6Wq1Q7YGyM-iab9i/scene.splinecode"
-            className="w-full h-full"
-            onSplineLoad={handleSplineLoad}
-          />
+        {/* Interactive 3D Characters Scene */}
+        <div className={`w-full h-full transition-all duration-500 ${isPasswordFocused ? 'brightness-50' : ''}`}>
+          <Canvas camera={{ position: [0, 0, 6], fov: 50 }}>
+            <Scene isLookingAway={isPasswordFocused} />
+          </Canvas>
         </div>
         
         {/* Privacy indicator when password focused */}
@@ -214,11 +287,9 @@ const Auth = () => {
         
         {/* Mobile 3D Characters Background */}
         <div className={`absolute inset-0 lg:hidden transition-all duration-500 ${isPasswordFocused ? 'opacity-10 blur-md' : 'opacity-30'}`}>
-          <SplineScene
-            scene="https://prod.spline.design/6Wq1Q7YGyM-iab9i/scene.splinecode"
-            className="w-full h-full"
-            onSplineLoad={handleSplineLoad}
-          />
+          <Canvas camera={{ position: [0, 0, 6], fov: 50 }}>
+            <Scene isLookingAway={isPasswordFocused} />
+          </Canvas>
         </div>
 
         {/* Auth Card */}
@@ -378,24 +449,8 @@ const Auth = () => {
         </div>
       </div>
       
-      {/* CSS for loader */}
+      {/* CSS for animations */}
       <style>{`
-        .loader {
-          width: 48px;
-          height: 48px;
-          border: 3px solid rgba(255,255,255,0.1);
-          border-bottom-color: rgba(255,255,255,0.8);
-          border-radius: 50%;
-          display: inline-block;
-          box-sizing: border-box;
-          animation: rotation 1s linear infinite;
-        }
-        
-        @keyframes rotation {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        
         @keyframes spotlight {
           0% {
             opacity: 0;
