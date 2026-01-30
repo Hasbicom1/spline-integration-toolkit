@@ -186,7 +186,7 @@ const Auth = () => {
         {/* Interactive 3D Characters Scene - follows mouse, looks away on password */}
         <div className={`w-full h-full transition-all duration-500 ${isPasswordFocused ? 'scale-105 blur-sm' : ''}`}>
           <SplineScene
-            scene="https://prod.spline.design/JYxRDYFKGbbXDfix/scene.splinecode"
+            scene="https://prod.spline.design/6Wq1Q7YGyM-iab9i/scene.splinecode"
             className="w-full h-full"
             onSplineLoad={handleSplineLoad}
           />
@@ -215,7 +215,7 @@ const Auth = () => {
         {/* Mobile 3D Characters Background */}
         <div className={`absolute inset-0 lg:hidden transition-all duration-500 ${isPasswordFocused ? 'opacity-10 blur-md' : 'opacity-30'}`}>
           <SplineScene
-            scene="https://prod.spline.design/JYxRDYFKGbbXDfix/scene.splinecode"
+            scene="https://prod.spline.design/6Wq1Q7YGyM-iab9i/scene.splinecode"
             className="w-full h-full"
             onSplineLoad={handleSplineLoad}
           />
