@@ -69,7 +69,7 @@ const Character = ({ position, color, scale = 1, mousePosition, isLookingAway, e
     if (!groupRef.current) return
     
     const targetX = isLookingAway ? -Math.PI * 0.4 : mousePosition.current.x * 0.8
-    const targetY = isLookingAway ? Math.PI * 0.3 : mousePosition.current.y * 0.5
+    const targetY = isLookingAway ? Math.PI * 0.3 : -mousePosition.current.y * 0.5
     
     // Smooth rotation towards target - faster lerp for more responsive tracking
     groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetX, 0.15)
