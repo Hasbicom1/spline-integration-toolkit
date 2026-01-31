@@ -68,12 +68,12 @@ const Character = ({ position, color, scale = 1, mousePosition, isLookingAway, e
   useFrame((state) => {
     if (!groupRef.current) return
     
-    const targetX = isLookingAway ? -Math.PI * 0.3 : mousePosition.current.x * 0.3
-    const targetY = isLookingAway ? Math.PI * 0.5 : mousePosition.current.y * 0.2
+    const targetX = isLookingAway ? -Math.PI * 0.4 : mousePosition.current.x * 0.8
+    const targetY = isLookingAway ? Math.PI * 0.3 : mousePosition.current.y * 0.5
     
-    // Smooth rotation towards target
-    groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetX, 0.05)
-    groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetY, 0.05)
+    // Smooth rotation towards target - faster lerp for more responsive tracking
+    groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetX, 0.15)
+    groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetY, 0.15)
     
     // Subtle floating animation
     if (bodyRef.current) {
@@ -81,16 +81,16 @@ const Character = ({ position, color, scale = 1, mousePosition, isLookingAway, e
     }
     
     // Eye tracking - pupils follow mouse more directly
-    const pupilOffsetX = isLookingAway ? -0.03 : mousePosition.current.x * 0.03
-    const pupilOffsetY = isLookingAway ? 0.02 : -mousePosition.current.y * 0.02
+    const pupilOffsetX = isLookingAway ? -0.05 : mousePosition.current.x * 0.05
+    const pupilOffsetY = isLookingAway ? 0.03 : -mousePosition.current.y * 0.04
     
     if (leftEyeRef.current) {
-      leftEyeRef.current.position.x = THREE.MathUtils.lerp(leftEyeRef.current.position.x, pupilOffsetX, 0.1)
-      leftEyeRef.current.position.y = THREE.MathUtils.lerp(leftEyeRef.current.position.y, pupilOffsetY, 0.1)
+      leftEyeRef.current.position.x = THREE.MathUtils.lerp(leftEyeRef.current.position.x, pupilOffsetX, 0.2)
+      leftEyeRef.current.position.y = THREE.MathUtils.lerp(leftEyeRef.current.position.y, pupilOffsetY, 0.2)
     }
     if (rightEyeRef.current) {
-      rightEyeRef.current.position.x = THREE.MathUtils.lerp(rightEyeRef.current.position.x, pupilOffsetX, 0.1)
-      rightEyeRef.current.position.y = THREE.MathUtils.lerp(rightEyeRef.current.position.y, pupilOffsetY, 0.1)
+      rightEyeRef.current.position.x = THREE.MathUtils.lerp(rightEyeRef.current.position.x, pupilOffsetX, 0.2)
+      rightEyeRef.current.position.y = THREE.MathUtils.lerp(rightEyeRef.current.position.y, pupilOffsetY, 0.2)
     }
   })
 
@@ -318,17 +318,6 @@ const Auth = () => {
           </Canvas>
         </div>
         
-        {/* Privacy indicator when password focused */}
-        {isPasswordFocused && (
-          <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-            <div className="bg-black/60 backdrop-blur-sm rounded-2xl px-8 py-4 border border-white/10">
-              <div className="flex items-center gap-3 text-neutral-300">
-                <EyeOff className="h-6 w-6" />
-                <span className="text-lg font-medium">Characters looking away...</span>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Right side - Auth Form */}
@@ -419,12 +408,6 @@ const Auth = () => {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                {isPasswordFocused && (
-                  <p className="text-xs text-neutral-500 flex items-center gap-1.5 mt-1">
-                    <EyeOff className="h-3 w-3" />
-                    The characters are looking away for your privacy
-                  </p>
-                )}
               </div>
 
               {/* Forgot password link */}
