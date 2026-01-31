@@ -5,6 +5,7 @@ import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from "lucide-react"
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment } from '@react-three/drei'
 import * as THREE from 'three'
+import { SparklesCore } from '@/components/ui/sparkles'
 
 // ============================================
 // SPOTLIGHT COMPONENT
@@ -308,11 +309,34 @@ const Auth = () => {
           fill="white"
         />
         
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/70 z-10 pointer-events-none" />
+        {/* Sparkles background effect */}
+        <div className="absolute inset-0 z-0">
+          <SparklesCore
+            id="sparkles-auth"
+            background="transparent"
+            minSize={0.6}
+            maxSize={1.4}
+            particleDensity={100}
+            particleColor="#FFFFFF"
+            speed={1}
+            className="w-full h-full"
+          />
+        </div>
+        
+        {/* Gradient overlays */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-[5] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/70 z-[5] pointer-events-none" />
+        
+        {/* Apple-style Eukarya text */}
+        <div className="absolute bottom-16 left-0 right-0 z-[15] text-center pointer-events-none">
+          <h1 className="text-7xl md:text-8xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white via-neutral-200 to-neutral-500" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif' }}>
+            Eukarya
+          </h1>
+          <p className="mt-3 text-neutral-400 text-lg tracking-wide">The future of collaboration</p>
+        </div>
         
         {/* Interactive 3D Characters Scene */}
-        <div className={`w-full h-full transition-all duration-500 ${isPasswordFocused ? 'brightness-50' : ''}`}>
+        <div className={`w-full h-full relative z-10 transition-all duration-500 ${isPasswordFocused ? 'brightness-50' : ''}`}>
           <Canvas camera={{ position: [0, 0, 6], fov: 50 }}>
             <Scene isLookingAway={isPasswordFocused} />
           </Canvas>
@@ -326,6 +350,20 @@ const Auth = () => {
           className="-top-40 right-0 md:right-60 md:-top-20 lg:hidden"
           fill="white"
         />
+        
+        {/* Mobile Sparkles Background */}
+        <div className={`absolute inset-0 lg:hidden z-0 transition-all duration-500 ${isPasswordFocused ? 'opacity-5' : 'opacity-20'}`}>
+          <SparklesCore
+            id="sparkles-mobile"
+            background="transparent"
+            minSize={0.4}
+            maxSize={1}
+            particleDensity={60}
+            particleColor="#FFFFFF"
+            speed={1}
+            className="w-full h-full"
+          />
+        </div>
         
         {/* Mobile 3D Characters Background */}
         <div className={`absolute inset-0 lg:hidden transition-all duration-500 ${isPasswordFocused ? 'opacity-10 blur-md' : 'opacity-30'}`}>
